@@ -62,18 +62,11 @@ def check_multicollinearity(df, predictors):
     X = df[predictors]
     vif_data = pd.DataFrame()
     vif_data["feature"] = X.columns
-    vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(len(X.columns))]
+    vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
     st.write(vif_data)
-
-# Fungsi untuk uji Chow
-def chow_test(df, predictors, response):
-    st.subheader("Uji Chow")
-    # Implementasi uji Chow
-    st.write("Uji Chow belum diimplementasikan sepenuhnya.")
 
 # Fungsi untuk uji Hausman
 def hausman_test(fixed, random):
-    st.subheader("Uji Hausman")
     b = fixed.params
     B = random.params
     v_b = fixed.cov
@@ -82,12 +75,6 @@ def hausman_test(fixed, random):
     chi2 = np.dot((b - B).T, np.linalg.inv(v_b - v_B).dot(b - B))
     p_value = stats.chi2.sf(chi2, df)
     return chi2, p_value
-
-# Fungsi untuk uji Lagrange Multiplier (LM)
-def lm_test(pooled_model, random_model):
-    st.subheader("Uji Lagrange Multiplier (LM)")
-    # Implementasi uji LM
-    st.write("Uji LM belum diimplementasikan sepenuhnya.")
 
 # Fungsi untuk model regresi data panel
 def panel_regression(df, predictors, response, entity_col, time_col, model_type):
@@ -100,18 +87,17 @@ def panel_regression(df, predictors, response, entity_col, time_col, model_type)
     if model_type == "FEM":
         model = PanelOLS(y, X, entity_effects=True)
         results = model.fit()
-        st.write(results.summary)
     elif model_type == "REM":
         model = RandomEffects(y, X)
         results = model.fit()
-        st.write(results.summary)
     elif model_type == "CEM":
         model = PanelOLS(y, X)
         results = model.fit()
-        st.write(results.summary)
     else:
         st.write("Model tidak dikenali.")
+        return None
 
+    st.write(results.summary)
     return results
 
 # Fungsi utama
@@ -136,20 +122,22 @@ def main():
             model_type = st.selectbox("Pilih jenis model regresi", ["FEM", "REM", "CEM"])
             results = panel_regression(df, predictors, response, entity_col, time_col, model_type)
             
-            if model_type == "FEM" or model_type == "REM":
-                st.subheader("Uji Hausman")
-                fixed_model = PanelOLS(df[response], df[predictors], entity_effects=True).fit()
-                random_model = RandomEffects(df[response], df[predictors]).fit()
-                chi2, p_value = hausman_test(fixed_model, random_model)
-                st.write(f"Chi-Square: {chi2}, p-value: {p_value}")
-            
-            st.subheader("Pilih Uji Tambahan")
-            additional_tests = st.multiselect("Pilih uji tambahan", ["Uji Chow", "Uji LM"])
-            
-            if "Uji Chow" in additional_tests:
-                chow_test(df, predictors, response)
-            if "Uji LM" in additional_tests:
-                lm_test(fixed_model, random_model)
+            if results:
+                if model_type in ["FEM", "REM"]:
+                    st.subheader("Uji Hausman")
+                    fixed_model = PanelOLS(y, X, entity_effects=True).fit()
+                    random_model = RandomEffects(y, X).fit()
+                    chi2, p_value = hausman_test(fixed_model, random_model)
+                    st.write(f"Chi-Square: {chi2}, p-value: {p_value}")
+
+                st.subheader("Pilih Uji Tambahan")
+                additional_tests = st.multiselect("Pilih uji tambahan", ["Uji Chow", "Uji LM"])
+                
+                if "Uji Chow" in additional_tests:
+                    st.write("Uji Chow belum diimplementasikan sepenuhnya.")
+                if "Uji LM" in additional_tests:
+                    st.write("Uji LM belum diimplementasikan sepenuhnya.")
     
 if __name__ == "__main__":
     main()
+    
